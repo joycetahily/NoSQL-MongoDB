@@ -141,7 +141,7 @@
             <div class="carousel-inner">
               {% for foto in prop.fotos %}
               <div class="carousel-item {% if loop.first %}active{% endif %}">
-                <img src="{{ url_for('static', filename='imagenes/' ~ foto) }}" class="d-block w-100" alt="Foto propiedad">
+                <img src="{{ url_for('static', filename='imagenes_propiedades/' ~ foto) }}" class="d-block w-100" alt="Foto propiedad">
               </div>
               {% endfor %}
             </div>
