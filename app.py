@@ -10,6 +10,7 @@ from bson.decimal128 import Decimal128
 from flask import send_file
 from bson import ObjectId
 from decimal import Decimal
+from werkzeug.utils import secure_filename
 
 
 app = Flask(__name__)
@@ -28,6 +29,18 @@ pagos = db["pagos"]
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
+# Carpeta donde se guardarán los documentos de usuarios
+UPLOAD_FOLDER = 'static/documentos'
+# Carpeta donde se guardarán las fotos de propiedades
+UPLOAD_FOLDER_PROP = 'static/imagenes_propiedades'
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['UPLOAD_FOLDER_PROP'] = UPLOAD_FOLDER_PROP
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # ---------------- PÁGINA PRINCIPAL ----------------
 @app.route("/")
@@ -82,10 +95,22 @@ def registro():
                 flash("Debes ingresar una CLABE válida de 18 dígitos.", "danger")
                 return redirect(url_for("registro"))
 
-        documentos = [d.strip() for d in request.form["documento_identidad"].split(",") if d.strip()]
-        if len(documentos) < 2:
-            flash("Debes ingresar al menos 2 documentos de identidad.", "danger")
+        # Manejo de archivos
+        archivos = request.files.getlist("documento_identidad")
+        if len(archivos) < 2:
+            flash("Debes subir al menos 2 documentos de identidad.", "danger")
             return redirect(url_for("registro"))
+
+        documentos_guardados = []
+        for archivo in archivos:
+            if archivo and allowed_file(archivo.filename):
+                filename = secure_filename(archivo.filename)
+                ruta = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+                archivo.save(ruta)
+                documentos_guardados.append(filename)
+            else:
+                flash("Solo se permiten archivos: png, jpg, jpeg, pdf.", "danger")
+                return redirect(url_for("registro"))
 
         data = {
             "nombre": request.form["nombre"],
@@ -93,8 +118,8 @@ def registro():
             "correo": request.form["correo"],
             "contraseña": hash_password(request.form["contraseña"]),
             "fecha_nacimiento": datetime.strptime(request.form["fecha_nacimiento"], "%Y-%m-%d"),
-            "direccion_postal": request.form["direccion_postal"],
-            "documento_identidad": documentos,
+            "direccion_postal": request.form.get("direccion_postal"),
+            "documento_identidad": documentos_guardados,
             "rol": roles,
             "es_anfitrion": es_anfitrion,
             "clabe_bancaria": clabe_bancaria,
@@ -128,33 +153,48 @@ def logout():
 # ---------------- CREAR NUEVA PROPIEDAD ----------------
 @app.route("/crear_propiedad", methods=["GET", "POST"])
 def crear_propiedad():
-    if "usuario_id" not in session or "anfitrion" not in session.get("usuario_rol", []):
-        flash("No tienes permisos para crear propiedades.", "danger")
-        return redirect(url_for("ver_propiedades"))
-
     if request.method == "POST":
-        fotos = [f.strip() for f in request.form.get("fotos", "").split(",") if f.strip()]
-        servicios_raw = request.form.get("servicios", "")
-        servicios = [s.strip() for s in servicios_raw.split(",") if s.strip()]
+        # Campos del formulario
+        titulo = request.form["titulo"]
+        precio_por_dia = float(request.form["precio_por_dia"])
+        tipo = request.form["tipo"]
+        descripcion = request.form["descripcion"]
+        reglas = request.form["reglas"]
+        servicios = [s.strip() for s in request.form["servicios"].split(",") if s.strip()]
+        ciudad = request.form["ciudad"]
+        colonia = request.form["colonia"]
+        calle_numero = request.form["calle_numero"]
 
+        # --- Aquí procesas las fotos ---
+        archivos = request.files.getlist('fotos')  # 'fotos' es el name del input del HTML
+        nombres_guardados = []
 
-        nueva_propiedad = {
-            "anfitrion_id": ObjectId(session["usuario_id"]),
-            "titulo": request.form["titulo"],
-            "fotos": fotos,
-            "precio_por_dia": Decimal128(Decimal(str(request.form["precio_por_dia"]))),
+        if not os.path.exists(app.config['UPLOAD_FOLDER_PROP']):
+            os.makedirs(app.config['UPLOAD_FOLDER_PROP'])
+
+        for archivo in archivos:
+            if archivo and allowed_file(archivo.filename):
+                filename = secure_filename(archivo.filename)
+                archivo.save(os.path.join(app.config['UPLOAD_FOLDER_PROP'], filename))
+                nombres_guardados.append(filename)
+
+        # --- Insertar en MongoDB ---
+        propiedad = {
+            "titulo": titulo,
+            "precio_por_dia": precio_por_dia,
+            "tipo": tipo,
+            "descripcion": descripcion,
+            "reglas": reglas,
+            "servicios": servicios,
             "ubicacion": {
-             "ciudad": request.form["ciudad"],
-               "colonia": request.form["colonia"],
-              "calle_numero": request.form["calle_numero"]
+                "ciudad": ciudad,
+                "colonia": colonia,
+                "calle_numero": calle_numero
             },
-            "tipo": request.form["tipo"],
-            "descripcion": request.form.get("descripcion", ""),
-            "servicios": servicios, 
-            "reglas": request.form.get("reglas", "")
-            }
+            "fotos": nombres_guardados
+        }
 
-        propiedades.insert_one(nueva_propiedad)
+        propiedades.insert_one(propiedad)
         flash("Propiedad creada correctamente.", "success")
         return redirect(url_for("ver_propiedades"))
 
