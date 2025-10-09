@@ -233,7 +233,7 @@ def agregar_resena(id):
         "fecha_creacion": datetime.utcnow()
     }
 
-    reseñas.insert_one(nueva_resena)
+    reseñas.insert_one(comentario)
     flash("Reseña agregada correctamente.", "success")
     return redirect(url_for("ver_propiedad", id=id))
 
