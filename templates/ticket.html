@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket de Reserva</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; }
+        h1 { text-align: center; }
+        .info { margin-bottom: 20px; }
+        .info p { margin: 5px 0; }
+        .desglose { border-collapse: collapse; width: 100%; }
+        .desglose th, .desglose td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    </style>
+</head>
+<body>
+    <h1>Ticket de Reserva</h1>
+
+    <div class="info">
+        <p><strong>Propiedad:</strong> {{ propiedad.titulo }}</p>
+        <p><strong>Huésped:</strong> {{ reserva.huesped_id }}</p>
+        <p><strong>Fecha de inicio:</strong> {{ reserva.fecha_inicio.strftime('%d/%m/%Y') }}</p>
+        <p><strong>Fecha de fin:</strong> {{ reserva.fecha_fin.strftime('%d/%m/%Y') }}</p>
+        <p><strong>Número de huéspedes:</strong> {{ reserva.numero_huespedes }}</p>
+        <p><strong>Estado reserva:</strong> {{ reserva.estado }}</p>
+        <p><strong>Fecha de reserva:</strong> {{ reserva.fecha_reserva.strftime('%d/%m/%Y') }}</p>
+        <p><strong>CLABE bancaria del anfitrión:</strong> {{ clabe }}</p>
+    </div>
+
+    <h2>Desglose de precio</h2>
+    <table class="desglose">
+        <tr>
+            <th>Precio por noche</th>
+            <th>Número de noches</th>
+            <th>Subtotal</th>
+            <th>Comisión servicio</th>
+            <th>Total</th>
+        </tr>
+        <tr>
+            <td>${{ reserva.desglose_precio.precio_por_noche }}</td>
+            <td>{{ reserva.desglose_precio.numero_noches }}</td>
+            <td>${{ reserva.desglose_precio.subtotal }}</td>
+            <td>${{ reserva.desglose_precio.comision_servicio }}</td>
+            <td>${{ reserva.desglose_precio.total }}</td>
+        </tr>
+    </table>
+
+    <h2>Pago</h2>
+    <div class="info">
+        <p><strong>Monto pagado:</strong> ${{ pago.monto }}</p>
+        <p><strong>Estado del pago:</strong> {{ pago.estado }}</p>
+        <p><strong>Fecha de creación:</strong> {{ pago.fecha_creacion.strftime('%d/%m/%Y') }}</p>
+        <p><strong>Fecha de confirmación:</strong> {{ pago.fecha_confirmacion.strftime('%d/%m/%Y') }}</p>
+    </div>
+</body>
+</html>

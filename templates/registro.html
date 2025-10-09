@@ -1,245 +1,108 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro - AlojaT</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --orange-color: #ff8c00;
-            --light-orange: #fff3e6;
-            --dark-orange: #e67e00;
-        }
-
-        body {
-            background-color: var(--light-orange);
-          margin-top: -40px;
-          margin-bottom: 10px;
-        }
-
-        .card {
-            border-radius: 15px;
-            border: none;
-        }
-
-        .card-header {
-            background-color: var(--orange-color);
-            color: white;
-            border-top-left-radius: 15px;
-            border-top-right-radius: 15px;
-            padding: 20px;
-        }
-
-        .form-label {
-            color: var(--dark-orange);
-            font-weight: 500;
-        }
-
-        .form-control:focus {
-            border-color: var(--orange-color);
-            box-shadow: 0 0 0 0.25rem rgba(255, 140, 0, 0.25);
-        }
-
-        .btn-primary {
-            background-color: var(--orange-color);
-            border-color: var(--orange-color);
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--dark-orange);
-            border-color: var(--dark-orange);
-            transform: translateY(-2px);
-        }
-
-        .form-check-input:checked {
-            background-color: var(--orange-color);
-            border-color: var(--orange-color);
-        }
-
-        #togglePassword {
-            cursor: pointer;
-            color: var(--orange-color);
-            transition: color 0.3s ease;
-        }
-
-        #togglePassword:hover {
-            color: var(--dark-orange);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro - AlojaT</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
-  
+
 <div class="container">
-    <div class="row justify-content-center mt-5">
-        <div class="col-md-7">
-            <div class="card shadow">
-                <div class="card-header text-center">
-                    <h3 class="card-title mb-0">Registro - AlojaT</h3>
+  <div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+      <div class="card shadow">
+        <div class="card-body">
+          <h3 class="card-title mb-4 text-center">Registro</h3>
+
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                  {{ message }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-                <div class="card-body">
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
 
-                    <form method="POST" id="registrationForm" class="needs-validation" novalidate>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="nombre" class="form-label">Nombre</label>
-                                <input type="text" name="nombre" id="nombre" class="form-control" required>
-                                <div class="invalid-feedback">Por favor, ingresa tu nombre.</div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="apellido" class="form-label">Apellido</label>
-                                <input type="text" name="apellido" id="apellido" class="form-control" required>
-                                <div class="invalid-feedback">Por favor, ingresa tu apellido.</div>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="correo" class="form-label">Correo</label>
-                            <input type="email" name="correo" id="correo" class="form-control" required>
-                            <div class="invalid-feedback">Ingresa un correo válido, por ejemplo: usuario@ejemplo.com.</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Contraseña</label>
-                            <div class="input-group">
-                                <input type="password" name="contraseña" id="password" class="form-control" required minlength="8">
-                                <span class="input-group-text" id="togglePassword">
-                                    👁️
-                                </span>
-                                <div class="invalid-feedback">La contraseña debe tener al menos 8 caracteres.</div>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="fecha_nacimiento" class="form-label">Fecha de nacimiento</label>
-                            <input type="date" name="fecha_nacimiento" id="fecha_nacimiento" class="form-control" required>
-                            <div class="invalid-feedback" id="age-validation-message">Debes ser mayor de 18 años para registrarte.</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="direccion_postal" class="form-label">Dirección personal (Opcional)</label>
-                            <input type="text" name="direccion_postal" id="direccion_postal" class="form-control">
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="documento_identidad" class="form-label">Documentos de identidad (mínimo 2, separados por coma)</label>
-                            <input type="text" name="documento_identidad" id="documento_identidad" class="form-control" placeholder="id1_f.jpg,id1_r.jpg" required>
-                            <div class="invalid-feedback">Por favor, sube al menos 2 documentos (ej. "id1_f.jpg, id1_r.jpg").</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Rol (selecciona al menos uno)</label>
-                            <div class="form-check">
-                                <input class="form-check-input rol-checkbox" type="checkbox" name="rol" value="anfitrion" id="rol_anfitrion">
-                                <label class="form-check-label" for="rol_anfitrion">Anfitrión</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input rol-checkbox" type="checkbox" name="rol" value="huesped" id="rol_huesped">
-                                <label class="form-check-label" for="rol_huesped">Huésped</label>
-                            </div>
-                            <div class="invalid-feedback d-block" id="rol-validation-message" style="display: none;">Debes seleccionar al menos un rol.</div>
-                        </div>
-
-                        <div class="mb-3" id="clabe-container" style="display:none;">
-                            <label for="clabe" class="form-label">CLABE bancaria (solo si eres anfitrión)</label>
-                            <input type="text" name="clabe_bancaria" id="clabe" class="form-control" placeholder="18 dígitos" pattern="\d{18}">
-                            <div class="invalid-feedback">La CLABE debe contener exactamente 18 dígitos.</div>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary w-100">Registrarse</button>
-                    </form>
-
-                    <p class="text-center mt-3">
-                        ¿Ya tienes cuenta? <a href="{{ url_for('login') }}" class="text-decoration-none" style="color: var(--orange-color);">Inicia sesión</a>
-                    </p>
-                </div>
+          <form method="POST">
+            <div class="mb-3">
+              <label class="form-label">Nombre</label>
+              <input type="text" name="nombre" class="form-control" required>
             </div>
+
+            <div class="mb-3">
+              <label class="form-label">Apellido</label>
+              <input type="text" name="apellido" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Correo</label>
+              <input type="email" name="correo" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Contraseña</label>
+              <input type="password" name="contraseña" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Fecha de nacimiento</label>
+              <input type="date" name="fecha_nacimiento" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Dirección personal</label>
+              <input type="text" name="direccion_postal" class="form-control">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Documentos de identidad (mínimo 2, separados por coma)</label>
+              <input type="text" name="documento_identidad" class="form-control" placeholder="id1_f.jpg,id1_r.jpg" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Rol (marca al menos uno)</label>
+              <div class="form-check">
+                <input class="form-check-input rol-checkbox" type="checkbox" name="rol" value="anfitrion" id="rol_anfitrion">
+                <label class="form-check-label" for="rol_anfitrion">Anfitrión</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input rol-checkbox" type="checkbox" name="rol" value="huesped" id="rol_huesped">
+                <label class="form-check-label" for="rol_huesped">Huésped</label>
+              </div>
+            </div>
+
+            <div class="mb-3" id="clabe-container" style="display:none;">
+              <label class="form-label">CLABE bancaria (solo si eres anfitrión)</label>
+              <input type="text" name="clabe_bancaria" id="clabe" class="form-control" placeholder="18 dígitos">
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Registrarse</button>
+          </form>
+
+          <p class="text-center mt-3">
+            ¿Ya tienes cuenta? <a href="{{ url_for('login') }}">Inicia sesión</a>
+          </p>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    const anfitrionCheckbox = document.getElementById('rol_anfitrion');
-    const clabeContainer = document.getElementById('clabe-container');
-    const clabeInput = document.getElementById('clabe');
-    const passwordInput = document.getElementById('password');
-    const togglePassword = document.getElementById('togglePassword');
-    const registrationForm = document.getElementById('registrationForm');
-    const ageInput = document.getElementById('fecha_nacimiento');
-    const rolCheckboxes = document.querySelectorAll('.rol-checkbox');
-    const rolValidationMessage = document.getElementById('rol-validation-message');
+  const anfitrionCheckbox = document.getElementById('rol_anfitrion');
+  const clabeContainer = document.getElementById('clabe-container');
 
-    // Muestra/oculta el campo de la CLABE si se selecciona "Anfitrión"
-    function toggleClabe() {
-        if (anfitrionCheckbox.checked) {
-            clabeContainer.style.display = 'block';
-            clabeInput.required = true;
-        } else {
-            clabeContainer.style.display = 'none';
-            clabeInput.required = false;
-        }
-    }
-    anfitrionCheckbox.addEventListener('change', toggleClabe);
-    toggleClabe(); // Llama al inicio para establecer el estado
+  function toggleClabe() {
+    clabeContainer.style.display = anfitrionCheckbox.checked ? 'block' : 'none';
+  }
 
-    // Muestra/oculta la contraseña
-    togglePassword.addEventListener('click', function (e) {
-        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordInput.setAttribute('type', type);
-        this.innerHTML = type === 'password' ? '👁️' : '🔒';
-    });
-
-    // Validaciones del formulario
-    registrationForm.addEventListener('submit', function (event) {
-        let formIsValid = true;
-
-        // Validación de edad
-        const birthDate = new Date(ageInput.value);
-        const today = new Date();
-        const age = today.getFullYear() - birthDate.getFullYear();
-        const m = today.getMonth() - birthDate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-            age--;
-        }
-        if (age < 18) {
-            ageInput.setCustomValidity("Invalid");
-            document.getElementById('age-validation-message').style.display = 'block';
-            formIsValid = false;
-        } else {
-            ageInput.setCustomValidity("");
-            document.getElementById('age-validation-message').style.display = 'none';
-        }
-
-        // Validación de al menos un rol seleccionado
-        const isAnyRolChecked = Array.from(rolCheckboxes).some(cb => cb.checked);
-        if (!isAnyRolChecked) {
-            rolValidationMessage.style.display = 'block';
-            formIsValid = false;
-        } else {
-            rolValidationMessage.style.display = 'none';
-        }
-
-        if (!formIsValid || !registrationForm.checkValidity()) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-
-        registrationForm.classList.add('was-validated');
-    }, false);
+  anfitrionCheckbox.addEventListener('change', toggleClabe);
+  toggleClabe(); // inicial
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

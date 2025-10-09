@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Crear propiedad</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+    <h2>Crear nueva propiedad</h2>
+
+    <!-- Mostrar mensajes flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('crear_propiedad') }}">
+      <div class="mb-2">
+        <label class="form-label">Título</label>
+        <input type="text" name="titulo" class="form-control" required>
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label">Fotos (nombres separados por coma)</label>
+        <input type="text" name="fotos" class="form-control" placeholder="f1.jpg,f2.jpg,...">
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label">Precio por día</label>
+        <input type="number" step="0.01" name="precio_por_dia" class="form-control" required>
+      </div>
+
+      <h4>Ubicación</h4>
+      <div class="mb-2">
+        <label class="form-label">Ciudad</label>
+        <input type="text" name="ciudad" class="form-control" required>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Colonia</label>
+        <input type="text" name="colonia" class="form-control" required>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Calle y número</label>
+        <input type="text" name="calle_numero" class="form-control" required>
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label">Tipo (departamento, casa, cabaña)</label>
+         <select name="tipo" class="form-select" required>
+         <option value="">Selecciona tipo</option>
+          <option value="casa">casa</option>
+          <option value="departamento">departamento</option>
+          <option value="cabaña">cabaña</option>
+        </select>
+        </div>
+
+
+      <div class="mb-2">
+        <label class="form-label">Descripción</label>
+        <textarea name="descripcion" class="form-control"></textarea>
+      </div>
+
+<div class="mb-2">
+  <label class="form-label">Servicios (separados por coma)</label>
+  <input type="text" name="servicios" class="form-control" placeholder="wifi, clima, cocina">
+  <small class="text-muted">Escribe los servicios separados por coma.</small>
+</div>
+
+
+      <div class="mb-2">
+        <label class="form-label">Reglas</label>
+        <textarea name="reglas" class="form-control"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary mt-3">Crear propiedad</button>
+    </form>
+</div>
+</body>
+</html>
+
+
