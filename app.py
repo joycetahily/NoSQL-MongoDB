@@ -1,5 +1,4 @@
 import io
-import os
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file
 from pymongo import MongoClient
 from bson import ObjectId
@@ -11,7 +10,6 @@ from bson.decimal128 import Decimal128
 from flask import send_file
 from bson import ObjectId
 from decimal import Decimal
-from werkzeug.utils import secure_filename
 
 
 app = Flask(__name__)
@@ -30,18 +28,6 @@ pagos = db["pagos"]
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# Carpeta donde se guardarán los documentos de usuarios
-UPLOAD_FOLDER = 'static/documentos'
-# Carpeta donde se guardarán las fotos de propiedades
-UPLOAD_FOLDER_PROP = 'static/imagenes_propiedades'
-
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['UPLOAD_FOLDER_PROP'] = UPLOAD_FOLDER_PROP
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # ---------------- PÁGINA PRINCIPAL ----------------
 @app.route("/")
@@ -64,6 +50,7 @@ def login():
             session["usuario_nombre"] = user["nombre"]
             session["usuario_rol"] = user.get("rol", []) 
 
+            flash("", "success")
             return redirect(url_for("dashboard"))
         else:
             flash("Correo o contraseña incorrectos", "danger")
@@ -96,22 +83,10 @@ def registro():
                 flash("Debes ingresar una CLABE válida de 18 dígitos.", "danger")
                 return redirect(url_for("registro"))
 
-        # Manejo de archivos
-        archivos = request.files.getlist("documento_identidad")
-        if len(archivos) < 2:
-            flash("Debes subir al menos 2 documentos de identidad.", "danger")
+        documentos = [d.strip() for d in request.form["documento_identidad"].split(",") if d.strip()]
+        if len(documentos) < 2:
+            flash("Debes ingresar al menos 2 documentos de identidad.", "danger")
             return redirect(url_for("registro"))
-
-        documentos_guardados = []
-        for archivo in archivos:
-            if archivo and allowed_file(archivo.filename):
-                filename = secure_filename(archivo.filename)
-                ruta = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-                archivo.save(ruta)
-                documentos_guardados.append(filename)
-            else:
-                flash("Solo se permiten archivos: png, jpg, jpeg, pdf.", "danger")
-                return redirect(url_for("registro"))
 
         data = {
             "nombre": request.form["nombre"],
@@ -119,8 +94,8 @@ def registro():
             "correo": request.form["correo"],
             "contraseña": hash_password(request.form["contraseña"]),
             "fecha_nacimiento": datetime.strptime(request.form["fecha_nacimiento"], "%Y-%m-%d"),
-            "direccion_postal": request.form.get("direccion_postal"),
-            "documento_identidad": documentos_guardados,
+            "direccion_postal": request.form["direccion_postal"],
+            "documento_identidad": documentos,
             "rol": roles,
             "es_anfitrion": es_anfitrion,
             "clabe_bancaria": clabe_bancaria,
@@ -154,48 +129,33 @@ def logout():
 # ---------------- CREAR NUEVA PROPIEDAD ----------------
 @app.route("/crear_propiedad", methods=["GET", "POST"])
 def crear_propiedad():
+    if "usuario_id" not in session or "anfitrion" not in session.get("usuario_rol", []):
+        flash("No tienes permisos para crear propiedades.", "danger")
+        return redirect(url_for("ver_propiedades"))
+
     if request.method == "POST":
-        # Campos del formulario
-        titulo = request.form["titulo"]
-        precio_por_dia = float(request.form["precio_por_dia"])
-        tipo = request.form["tipo"]
-        descripcion = request.form["descripcion"]
-        reglas = request.form["reglas"]
-        servicios = [s.strip() for s in request.form["servicios"].split(",") if s.strip()]
-        ciudad = request.form["ciudad"]
-        colonia = request.form["colonia"]
-        calle_numero = request.form["calle_numero"]
+        fotos = [f.strip() for f in request.form.get("fotos", "").split(",") if f.strip()]
+        servicios_raw = request.form.get("servicios", "")
+        servicios = [s.strip() for s in servicios_raw.split(",") if s.strip()]
 
-        # --- Aquí procesas las fotos ---
-        archivos = request.files.getlist('fotos')  # 'fotos' es el name del input del HTML
-        nombres_guardados = []
 
-        if not os.path.exists(app.config['UPLOAD_FOLDER_PROP']):
-            os.makedirs(app.config['UPLOAD_FOLDER_PROP'])
-
-        for archivo in archivos:
-            if archivo and allowed_file(archivo.filename):
-                filename = secure_filename(archivo.filename)
-                archivo.save(os.path.join(app.config['UPLOAD_FOLDER_PROP'], filename))
-                nombres_guardados.append(filename)
-
-        # --- Insertar en MongoDB ---
-        propiedad = {
-            "titulo": titulo,
-            "precio_por_dia": precio_por_dia,
-            "tipo": tipo,
-            "descripcion": descripcion,
-            "reglas": reglas,
-            "servicios": servicios,
+        nueva_propiedad = {
+            "anfitrion_id": ObjectId(session["usuario_id"]),
+            "titulo": request.form["titulo"],
+            "fotos": fotos,
+            "precio_por_dia": Decimal128(Decimal(str(request.form["precio_por_dia"]))),
             "ubicacion": {
-                "ciudad": ciudad,
-                "colonia": colonia,
-                "calle_numero": calle_numero
+             "ciudad": request.form["ciudad"],
+               "colonia": request.form["colonia"],
+              "calle_numero": request.form["calle_numero"]
             },
-            "fotos": nombres_guardados
-        }
+            "tipo": request.form["tipo"],
+            "descripcion": request.form.get("descripcion", ""),
+            "servicios": servicios, 
+            "reglas": request.form.get("reglas", "")
+            }
 
-        propiedades.insert_one(propiedad)
+        propiedades.insert_one(nueva_propiedad)
         flash("Propiedad creada correctamente.", "success")
         return redirect(url_for("ver_propiedades"))
 
@@ -234,25 +194,11 @@ def ver_propiedad(id):
         })
         reservas_usuario = [r["_id"] for r in reservas_cursor]  # IDs de reservas completadas
 
-    # --- Obtener fechas ocupadas ---
-    reservas_completadas = reservas.find({
-        "propiedad_id": ObjectId(id),
-        "estado": "completada"
-    })
-
-    fechas_ocupadas = []
-    for r in reservas_completadas:
-        fecha = r["fecha_inicio"]
-        while fecha <= r["fecha_fin"]:
-            fechas_ocupadas.append(fecha.strftime("%Y-%m-%d"))
-            fecha += timedelta(days=1)
-
     return render_template(
         "propiedad.html",
         propiedad=propiedad,
         resenas=resenas,
-        reservas_usuario=reservas_usuario,
-        fechas_ocupadas=fechas_ocupadas
+        reservas_usuario=reservas_usuario
     )
 
 # ---------------- AGREGAR RESEÑA ----------------
@@ -287,7 +233,7 @@ def agregar_resena(id):
         "fecha_creacion": datetime.utcnow()
     }
 
-    reseñas.insert_one(nueva_resena)
+    reseñas.insert_one(comentario)
     flash("Reseña agregada correctamente.", "success")
     return redirect(url_for("ver_propiedad", id=id))
 
@@ -296,8 +242,7 @@ def agregar_resena(id):
 def reservar(id):
     propiedad = db.propiedades.find_one({"_id": ObjectId(id)})
     if not propiedad:
-        flash("Propiedad no encontrada.", "danger")
-        return redirect(url_for("ver_propiedades"))
+        return "Propiedad no encontrada", 404
 
     # Datos del formulario
     fecha_inicio = datetime.strptime(request.form["fecha_inicio"], "%Y-%m-%d")
@@ -305,22 +250,10 @@ def reservar(id):
     numero_huespedes = int(request.form["numero_huespedes"])
     numero_noches = (fecha_fin - fecha_inicio).days
 
-    # --- Validar disponibilidad ---
-    conflicto = reservas.find_one({
-        "propiedad_id": propiedad["_id"],
-        "estado": "completada",
-        "fecha_inicio": {"$lt": fecha_fin},
-        "fecha_fin": {"$gt": fecha_inicio}
-    })
-
-    if conflicto:
-        flash("Lo sentimos, la propiedad ya está reservada para esas fechas.", "danger")
-        return redirect(url_for("ver_propiedad", id=id))
-
     # Conversión a Decimal128
     precio_por_noche = Decimal128(Decimal(str(propiedad.get("precio_por_dia", 0))))
     subtotal = Decimal128(Decimal(str(precio_por_noche.to_decimal() * numero_noches)))
-    comision_servicio = Decimal128(Decimal(str(subtotal.to_decimal() * Decimal("0.10"))))
+    comision_servicio = Decimal128(Decimal(str(subtotal.to_decimal() * Decimal("0.10"))))  # 10% de ejemplo
     total = Decimal128(Decimal(str(subtotal.to_decimal() + comision_servicio.to_decimal())))
 
     # Crear documento de reserva
@@ -353,7 +286,7 @@ def reservar(id):
         "fecha_creacion": datetime.now(),
         "fecha_confirmacion": datetime.now()
     }
-    db.pagos.insert_one(pago)
+    pago_id = db.pagos.insert_one(pago).inserted_id
 
     # Generar PDF del ticket
     pdf = FPDF()
@@ -378,7 +311,7 @@ def reservar(id):
     pdf.cell(0, 8, f"  Total: ${total.to_decimal()}", ln=True)
     pdf.ln(5)
 
-    # Obtener CLABE del anfitrión
+    # Obtener clabe bancaria del anfitrión si existe
     anfitrion = db.usuarios.find_one({"_id": propiedad["anfitrion_id"]})
     clabe = anfitrion.get("clabe_bancaria", "No disponible")
     pdf.cell(0, 8, f"CLABE bancaria del anfitrión: {clabe}", ln=True)
