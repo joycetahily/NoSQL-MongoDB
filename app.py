@@ -194,11 +194,25 @@ def ver_propiedad(id):
         })
         reservas_usuario = [r["_id"] for r in reservas_cursor]  # IDs de reservas completadas
 
+    # --- Obtener fechas ocupadas ---
+    reservas_completadas = reservas.find({
+        "propiedad_id": ObjectId(id),
+        "estado": "completada"
+    })
+
+    fechas_ocupadas = []
+    for r in reservas_completadas:
+        fecha = r["fecha_inicio"]
+        while fecha <= r["fecha_fin"]:
+            fechas_ocupadas.append(fecha.strftime("%Y-%m-%d"))
+            fecha += timedelta(days=1)
+
     return render_template(
         "propiedad.html",
         propiedad=propiedad,
         resenas=resenas,
-        reservas_usuario=reservas_usuario
+        reservas_usuario=reservas_usuario,
+        fechas_ocupadas=fechas_ocupadas
     )
 
 # ---------------- AGREGAR RESEÑA ----------------
@@ -233,7 +247,7 @@ def agregar_resena(id):
         "fecha_creacion": datetime.utcnow()
     }
 
-    reseñas.insert_one(comentario)
+    reseñas.insert_one(nueva_resena)
     flash("Reseña agregada correctamente.", "success")
     return redirect(url_for("ver_propiedad", id=id))
 
@@ -242,7 +256,8 @@ def agregar_resena(id):
 def reservar(id):
     propiedad = db.propiedades.find_one({"_id": ObjectId(id)})
     if not propiedad:
-        return "Propiedad no encontrada", 404
+        flash("Propiedad no encontrada.", "danger")
+        return redirect(url_for("ver_propiedades"))
 
     # Datos del formulario
     fecha_inicio = datetime.strptime(request.form["fecha_inicio"], "%Y-%m-%d")
@@ -250,10 +265,22 @@ def reservar(id):
     numero_huespedes = int(request.form["numero_huespedes"])
     numero_noches = (fecha_fin - fecha_inicio).days
 
+    # --- Validar disponibilidad ---
+    conflicto = reservas.find_one({
+        "propiedad_id": propiedad["_id"],
+        "estado": "completada",
+        "fecha_inicio": {"$lt": fecha_fin},
+        "fecha_fin": {"$gt": fecha_inicio}
+    })
+
+    if conflicto:
+        flash("Lo sentimos, la propiedad ya está reservada para esas fechas.", "danger")
+        return redirect(url_for("ver_propiedad", id=id))
+
     # Conversión a Decimal128
     precio_por_noche = Decimal128(Decimal(str(propiedad.get("precio_por_dia", 0))))
     subtotal = Decimal128(Decimal(str(precio_por_noche.to_decimal() * numero_noches)))
-    comision_servicio = Decimal128(Decimal(str(subtotal.to_decimal() * Decimal("0.10"))))  # 10% de ejemplo
+    comision_servicio = Decimal128(Decimal(str(subtotal.to_decimal() * Decimal("0.10"))))
     total = Decimal128(Decimal(str(subtotal.to_decimal() + comision_servicio.to_decimal())))
 
     # Crear documento de reserva
@@ -286,7 +313,7 @@ def reservar(id):
         "fecha_creacion": datetime.now(),
         "fecha_confirmacion": datetime.now()
     }
-    pago_id = db.pagos.insert_one(pago).inserted_id
+    db.pagos.insert_one(pago)
 
     # Generar PDF del ticket
     pdf = FPDF()
@@ -311,7 +338,7 @@ def reservar(id):
     pdf.cell(0, 8, f"  Total: ${total.to_decimal()}", ln=True)
     pdf.ln(5)
 
-    # Obtener clabe bancaria del anfitrión si existe
+    # Obtener CLABE del anfitrión
     anfitrion = db.usuarios.find_one({"_id": propiedad["anfitrion_id"]})
     clabe = anfitrion.get("clabe_bancaria", "No disponible")
     pdf.cell(0, 8, f"CLABE bancaria del anfitrión: {clabe}", ln=True)

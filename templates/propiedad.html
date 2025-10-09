@@ -136,6 +136,19 @@
     </div>
   </nav>
 
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="container mt-3">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category=='danger' else 'success' }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
   <!-- CONTENIDO -->
   <div class="container mt-5">
     <a href="{{ url_for('ver_propiedades') }}" class="btn btn-brown mb-4">&larr; Volver</a>
@@ -197,35 +210,34 @@
 
     <hr id="reseñas">
 
-<!-- Agregar reseña -->
-{% if 'huesped' in session.usuario_rol and reservas_usuario|length > 0 %}
-<div class="card mb-4">
-  <div class="card-body">
-    <h4>Agregar una reseña</h4>
-    <form method="POST" action="{{ url_for('agregar_resena', id=propiedad._id) }}">
-      <div class="mb-3">
-        <label for="comentario" class="form-label">Comentario:</label>
-        <textarea id="comentario" name="comentario" class="form-control" rows="3" minlength="20" required></textarea>
+    <!-- Agregar reseña -->
+    {% if 'huesped' in session.usuario_rol and reservas_usuario|length > 0 %}
+    <div class="card mb-4">
+      <div class="card-body">
+        <h4>Agregar una reseña</h4>
+        <form method="POST" action="{{ url_for('agregar_resena', id=propiedad._id) }}">
+          <div class="mb-3">
+            <label for="comentario" class="form-label">Comentario:</label>
+            <textarea id="comentario" name="comentario" class="form-control" rows="3" minlength="20" required></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Calificación:</label>
+            <select class="form-select" name="calificacion" required>
+              <option value="" selected disabled>Selecciona</option>
+              <option value="1">⭐</option>
+              <option value="2">⭐⭐</option>
+              <option value="3">⭐⭐⭐</option>
+              <option value="4">⭐⭐⭐⭐</option>
+              <option value="5">⭐⭐⭐⭐⭐</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-orange w-100">Enviar reseña</button>
+        </form>
       </div>
-      <div class="mb-3">
-        <label class="form-label">Calificación:</label>
-        <select class="form-select" name="calificacion" required>
-          <option value="" selected disabled>Selecciona</option>
-          <option value="1">⭐</option>
-          <option value="2">⭐⭐</option>
-          <option value="3">⭐⭐⭐</option>
-          <option value="4">⭐⭐⭐⭐</option>
-          <option value="5">⭐⭐⭐⭐⭐</option>
-        </select>
-      </div>
-      <button type="submit" class="btn btn-orange w-100">Enviar reseña</button>
-    </form>
-  </div>
-</div>
-{% elif 'huesped' in session.usuario_rol %}
-<p class="text-muted">Debes completar una reserva para poder dejar una reseña.</p>
-{% endif %}
-
+    </div>
+    {% elif 'huesped' in session.usuario_rol %}
+    <p class="text-muted">Debes completar una reserva para poder dejar una reseña.</p>
+    {% endif %}
 
     <!-- Mostrar reseñas -->
     <div class="card mb-5">
@@ -257,5 +269,26 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Fechas ocupadas pasadas desde Flask
+    const fechasOcupadas = {{ fechas_ocupadas|tojson | safe }};
+
+    const fechaInicioInput = document.getElementById('fecha_inicio');
+    const fechaFinInput = document.getElementById('fecha_fin');
+
+    function validarFecha(input) {
+      input.addEventListener('change', () => {
+        if (fechasOcupadas.includes(input.value)) {
+          alert("Esta fecha no está disponible. Por favor selecciona otra.");
+          input.value = '';
+        }
+      });
+    }
+
+    validarFecha(fechaInicioInput);
+    validarFecha(fechaFinInput);
+  </script>
+
 </body>
 </html>
+
