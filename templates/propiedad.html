@@ -197,34 +197,35 @@
 
     <hr id="reseñas">
 
-    <!-- Agregar reseña -->
-    <div class="card mb-4">
-      <div class="card-body">
-        <h4>Agregar una reseña</h4>
-        <form method="POST" action="{{ url_for('agregar_resena', id=propiedad._id) }}">
-          <div class="mb-3">
-            <label for="usuario" class="form-label">Nombre:</label>
-            <input type="text" id="usuario" name="usuario" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label for="comentario" class="form-label">Comentario:</label>
-            <textarea id="comentario" name="comentario" class="form-control" rows="3" required></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Calificación:</label>
-            <select class="form-select" name="calificacion" required>
-              <option value="" selected disabled>Selecciona</option>
-              <option value="1">⭐</option>
-              <option value="2">⭐⭐</option>
-              <option value="3">⭐⭐⭐</option>
-              <option value="4">⭐⭐⭐⭐</option>
-              <option value="5">⭐⭐⭐⭐⭐</option>
-            </select>
-          </div>
-          <button type="submit" class="btn btn-orange w-100">Enviar reseña</button>
-        </form>
+<!-- Agregar reseña -->
+{% if 'huesped' in session.usuario_rol and reservas_usuario|length > 0 %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h4>Agregar una reseña</h4>
+    <form method="POST" action="{{ url_for('agregar_resena', id=propiedad._id) }}">
+      <div class="mb-3">
+        <label for="comentario" class="form-label">Comentario:</label>
+        <textarea id="comentario" name="comentario" class="form-control" rows="3" minlength="20" required></textarea>
       </div>
-    </div>
+      <div class="mb-3">
+        <label class="form-label">Calificación:</label>
+        <select class="form-select" name="calificacion" required>
+          <option value="" selected disabled>Selecciona</option>
+          <option value="1">⭐</option>
+          <option value="2">⭐⭐</option>
+          <option value="3">⭐⭐⭐</option>
+          <option value="4">⭐⭐⭐⭐</option>
+          <option value="5">⭐⭐⭐⭐⭐</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-orange w-100">Enviar reseña</button>
+    </form>
+  </div>
+</div>
+{% elif 'huesped' in session.usuario_rol %}
+<p class="text-muted">Debes completar una reserva para poder dejar una reseña.</p>
+{% endif %}
+
 
     <!-- Mostrar reseñas -->
     <div class="card mb-5">

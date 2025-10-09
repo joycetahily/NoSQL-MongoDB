@@ -48,9 +48,9 @@ def login():
             # Guardamos la información del usuario en la sesión
             session["usuario_id"] = str(user["_id"])
             session["usuario_nombre"] = user["nombre"]
-            session["usuario_rol"] = user.get("rol", [])  # <-- guardamos la lista completa de roles
+            session["usuario_rol"] = user.get("rol", []) 
 
-            flash("Inicio de sesión exitoso", "success")
+            flash("", "success")
             return redirect(url_for("dashboard"))
         else:
             flash("Correo o contraseña incorrectos", "danger")
@@ -183,8 +183,23 @@ def ver_propiedad(id):
         r["fecha"] = r["fecha_creacion"].strftime("%d/%m/%Y")
         resenas.append(r)
 
-    return render_template("propiedad.html", propiedad=propiedad, resenas=resenas)
+    # Verificar si el usuario tiene una reserva completada en esta propiedad
+    reservas_usuario = []
+    if "usuario_id" in session:
+        usuario_id = ObjectId(session["usuario_id"])
+        reservas_cursor = reservas.find({
+            "huesped_id": usuario_id,
+            "propiedad_id": ObjectId(id),
+            "estado": "completada"
+        })
+        reservas_usuario = [r["_id"] for r in reservas_cursor]  # IDs de reservas completadas
 
+    return render_template(
+        "propiedad.html",
+        propiedad=propiedad,
+        resenas=resenas,
+        reservas_usuario=reservas_usuario
+    )
 
 # ---------------- AGREGAR RESEÑA ----------------
 @app.route("/agregar_resena/<id>", methods=["POST"])
@@ -193,14 +208,26 @@ def agregar_resena(id):
         flash("Debes iniciar sesión para dejar una reseña.", "warning")
         return redirect(url_for("login"))
 
+    usuario_id = ObjectId(session["usuario_id"])
+
+    # Verificar que exista una reserva completada
+    reserva = reservas.find_one({
+        "huesped_id": usuario_id,
+        "propiedad_id": ObjectId(id),
+        "estado": "completada"
+    })
+
+    if not reserva:
+        flash("Debes completar una reserva para poder dejar una reseña.", "warning")
+        return redirect(url_for("ver_propiedad", id=id))
+
     comentario = request.form["comentario"]
     calificacion = int(request.form["calificacion"])
-    huesped_id = ObjectId(session["usuario_id"])
 
     nueva_resena = {
-        "reserva_id": None,
+        "reserva_id": reserva["_id"],   # obligatorio para pasar el schema
         "propiedad_id": ObjectId(id),
-        "huesped_id": huesped_id,
+        "huesped_id": usuario_id,
         "calificacion": calificacion,
         "comentario": comentario,
         "fecha_creacion": datetime.utcnow()
@@ -209,6 +236,7 @@ def agregar_resena(id):
     reseñas.insert_one(nueva_resena)
     flash("Reseña agregada correctamente.", "success")
     return redirect(url_for("ver_propiedad", id=id))
+
 
 @app.route("/reservar/<id>", methods=["POST"])
 def reservar(id):
