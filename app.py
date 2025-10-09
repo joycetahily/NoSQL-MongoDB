@@ -155,28 +155,19 @@ def logout():
 @app.route("/crear_propiedad", methods=["GET", "POST"])
 def crear_propiedad():
     if request.method == "POST":
+        # Campos del formulario
         titulo = request.form["titulo"]
-        precio_por_dia = Decimal128(str(request.form["precio_por_dia"]))
+        precio_por_dia = float(request.form["precio_por_dia"])
         tipo = request.form["tipo"]
         descripcion = request.form["descripcion"]
         reglas = request.form["reglas"]
-        servicios_validos = ['alberca', 'wifi', 'cable', 'botiquin', 'clima', 'calefaccion', 'cocina', 'estacionamiento']
-        servicios = [s.strip() for s in request.form["servicios"].split(",") if s.strip() in servicios_validos]
+        servicios = [s.strip() for s in request.form["servicios"].split(",") if s.strip()]
         ciudad = request.form["ciudad"]
         colonia = request.form["colonia"]
         calle_numero = request.form["calle_numero"]
 
-        # Validaciones previas
-        if len(descripcion.strip()) < 50:
-            flash("La descripción debe tener al menos 50 caracteres.", "error")
-            return redirect(url_for("crear_propiedad"))
-
-        if not servicios:
-            flash("Debes seleccionar al menos un servicio válido.", "error")
-            return redirect(url_for("crear_propiedad"))
-
-        # Procesar fotos
-        archivos = request.files.getlist('fotos')
+        # --- Aquí procesas las fotos ---
+        archivos = request.files.getlist('fotos')  # 'fotos' es el name del input del HTML
         nombres_guardados = []
 
         if not os.path.exists(app.config['UPLOAD_FOLDER_PROP']):
@@ -188,9 +179,7 @@ def crear_propiedad():
                 archivo.save(os.path.join(app.config['UPLOAD_FOLDER_PROP'], filename))
                 nombres_guardados.append(filename)
 
-        # ID del anfitrión (ajústalo según tu login)
-        anfitrion_id = ObjectId(session.get("usuario_id", "652e0b7fcb5b7a001f3a6a99"))
-
+        # --- Insertar en MongoDB ---
         propiedad = {
             "titulo": titulo,
             "precio_por_dia": precio_por_dia,
@@ -203,11 +192,11 @@ def crear_propiedad():
                 "colonia": colonia,
                 "calle_numero": calle_numero
             },
-            "fotos": nombres_guardados,
-            "anfitrion_id": anfitrion_id
+            "fotos": nombres_guardados
         }
 
         propiedades.insert_one(propiedad)
+        flash("Propiedad creada correctamente.", "success")
         return redirect(url_for("ver_propiedades"))
 
     return render_template("crear_propiedad.html")
