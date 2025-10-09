@@ -1,17 +1,113 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Dashboard</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --naranja: #ff7b00;
+      --naranja-oscuro: #e06b00;
+      --gris-claro: #f8f9fa;
+    }
+
+    body {
+      background-color: var(--gris-claro);
+      font-family: "Poppins", sans-serif;
+    }
+    
+    .navbar {
+      background: linear-gradient(90deg, var(--naranja) 0%, var(--naranja-oscuro) 100%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .navbar-brand {
+      font-weight: 600;
+      font-size: 1.5rem;
+      color: white !important;
+    }
+
+    .btn-logout {
+      border: 2px solid white;
+      color: white;
+      transition: 0.3s;
+    }
+
+    .btn-logout:hover {
+      background-color: white;
+      color: var(--naranja-oscuro);
+    }
+
+    .welcome-card {
+      background-color: white;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .welcome-card h2 {
+      color: var(--naranja-oscuro);
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .btn-orange {
+      background-color: var(--naranja);
+      border: none;
+      color: white;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      padding: 12px 30px;
+      transition: 0.3s;
+    }
+
+    .btn-orange:hover {
+      background-color: var(--naranja-oscuro);
+      transform: translateY(-2px);
+    }
+
+    footer {
+      margin-top: 60px;
+      text-align: center;
+      color: #777;
+      font-size: 0.9rem;
+    }
+  </style>
 </head>
-<body class="bg-light">
-<div class="container mt-5 text-center">
-  <h2>Bienvenido, {{ rol }}</h2>
-  <a href="{{ url_for('ver_propiedades') }}" class="btn btn-primary btn-lg m-3">Ver propiedades disponibles</a>
-    {% if "anfitrion" in session.get("usuario_rol") %}
-    <a href="{{ url_for('crear_propiedad') }}" class="btn btn-success btn-lg m-3">Crear nueva propiedad</a>
-    {% endif %}
-</div>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+      <a class="navbar-brand" href="#">🏠 AlojaT</a>
+
+      {% if session.usuario_id %}
+      <a href="/logout" class="btn btn-logout">Cerrar sesión</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- Contenido principal -->
+  <div class="container mt-5 text-center">
+    <div class="welcome-card">
+      <h2>¡Bienvenido, {{ session["usuario_nombre"] }}!</h2>
+      <p class="mb-4">Has accedido como <strong>{{ session["usuario_rol"] }}</strong></p>
+
+      <div class="d-flex flex-column flex-md-row justify-content-center gap-3">
+        <a href="{{ url_for('ver_propiedades') }}" class="btn-orange">Ver propiedades disponibles</a>
+
+        {% if "anfitrion" in session.get("usuario_rol") %}
+        <a href="{{ url_for('crear_propiedad') }}" class="btn-orange">Crear nueva propiedad</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <footer class="mt-5">
+    <!--<p>© 2025 AlojaT. Todos los derechos reservados.</p> -->
+  </footer>
+
 </body>
 </html>

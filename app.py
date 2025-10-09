@@ -121,6 +121,11 @@ def ver_propiedades():
     data = list(propiedades.find())
     return render_template("propiedades.html", propiedades=data, usuario=session["usuario_nombre"])
 
+@app.route("/logout")
+def logout():
+    session.clear()  # Elimina toda la información de sesión
+    return redirect(url_for("login"))  # Redirige al login
+
 # ---------------- CREAR NUEVA PROPIEDAD ----------------
 @app.route("/crear_propiedad", methods=["GET", "POST"])
 def crear_propiedad():
