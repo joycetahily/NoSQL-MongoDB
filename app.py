@@ -50,7 +50,6 @@ def login():
             session["usuario_nombre"] = user["nombre"]
             session["usuario_rol"] = user.get("rol", []) 
 
-            flash("", "success")
             return redirect(url_for("dashboard"))
         else:
             flash("Correo o contraseña incorrectos", "danger")
