@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Nuevo Usuario</title>
+</head>
+<body>
+  <h1>Agregar Usuario</h1>
+  <form method="POST">
+    <label>Nombre:</label><br>
+    <input type="text" name="nombre" required><br><br>
+
+    <label>Apellido:</label><br>
+    <input type="text" name="apellido" required><br><br>
+
+    <label>Correo:</label><br>
+    <input type="email" name="correo" required><br><br>
+
+    <label>Contraseña:</label><br>
+    <input type="password" name="contraseña" required><br><br>
+
+    <label>Fecha de nacimiento:</label><br>
+    <input type="date" name="fecha_nacimiento" required><br><br>
+
+    <label>Dirección postal:</label><br>
+    <input type="text" name="direccion_postal"><br><br>
+
+    <label>Documentos de identidad (separados por coma):</label><br>
+    <input type="text" name="documento_identidad" placeholder="id1_f.jpg, id1_r.jpg"><br><br>
+
+    <label>Rol (separados por coma):</label><br>
+    <input type="text" name="rol" placeholder="anfitrion, huesped"><br><br>
+
+    <label>¿Es anfitrión?</label>
+    <input type="checkbox" name="es_anfitrion"><br><br>
+
+    <label>CLABE bancaria:</label><br>
+    <input type="text" name="clabe_bancaria"><br><br>
+
+    <button type="submit">Guardar</button>
+  </form>
+  <br>
+  <a href="/">⬅️ Volver</a>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro - AlojaT</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container">
+  <div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+      <div class="card shadow">
+        <div class="card-body">
+          <h3 class="card-title mb-4 text-center">Registro</h3>
+
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                  {{ message }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+
+          <form method="POST">
+            <div class="mb-3">
+              <label class="form-label">Nombre</label>
+              <input type="text" name="nombre" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Apellido</label>
+              <input type="text" name="apellido" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Correo</label>
+              <input type="email" name="correo" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Contraseña</label>
+              <input type="password" name="contraseña" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Fecha de nacimiento</label>
+              <input type="date" name="fecha_nacimiento" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Dirección personal</label>
+              <input type="text" name="direccion_postal" class="form-control">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Documentos de identidad (mínimo 2, separados por coma)</label>
+              <input type="text" name="documento_identidad" class="form-control" placeholder="id1_f.jpg,id1_r.jpg" required>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Rol (marca al menos uno)</label>
+              <div class="form-check">
+                <input class="form-check-input rol-checkbox" type="checkbox" name="rol" value="anfitrion" id="rol_anfitrion">
+                <label class="form-check-label" for="rol_anfitrion">Anfitrión</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input rol-checkbox" type="checkbox" name="rol" value="huesped" id="rol_huesped">
+                <label class="form-check-label" for="rol_huesped">Huésped</label>
+              </div>
+            </div>
+
+            <div class="mb-3" id="clabe-container" style="display:none;">
+              <label class="form-label">CLABE bancaria (solo si eres anfitrión)</label>
+              <input type="text" name="clabe_bancaria" id="clabe" class="form-control" placeholder="18 dígitos">
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Registrarse</button>
+          </form>
+
+          <p class="text-center mt-3">
+            ¿Ya tienes cuenta? <a href="{{ url_for('login') }}">Inicia sesión</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const anfitrionCheckbox = document.getElementById('rol_anfitrion');
+  const clabeContainer = document.getElementById('clabe-container');
+
+  function toggleClabe() {
+    clabeContainer.style.display = anfitrionCheckbox.checked ? 'block' : 'none';
+  }
+
+  anfitrionCheckbox.addEventListener('change', toggleClabe);
+  toggleClabe(); // inicial
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

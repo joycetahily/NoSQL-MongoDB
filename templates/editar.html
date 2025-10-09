@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Editar Usuario</title>
+</head>
+<body>
+  <h1>Editar Usuario</h1>
+  <form method="POST">
+    <label>Nombre:</label><br>
+    <input type="text" name="nombre" value="{{ usuario.nombre }}" required><br><br>
+
+    <label>Apellido:</label><br>
+    <input type="text" name="apellido" value="{{ usuario.apellido }}" required><br><br>
+
+    <label>Correo:</label><br>
+    <input type="email" name="correo" value="{{ usuario.correo }}" required><br><br>
+
+    <label>Contraseña:</label><br>
+    <input type="password" name="contraseña" value="{{ usuario.contraseña }}" required><br><br>
+
+    <label>Fecha de nacimiento:</label><br>
+    <input type="date" name="fecha_nacimiento" value="{{ usuario.fecha_nacimiento.strftime('%Y-%m-%d') }}"><br><br>
+
+    <label>Dirección postal:</label><br>
+    <input type="text" name="direccion_postal" value="{{ usuario.direccion_postal }}"><br><br>
+
+    <label>Documentos (separados por coma):</label><br>
+    <input type="text" name="documento_identidad" value="{{ ', '.join(usuario.documento_identidad) }}"><br><br>
+
+    <label>Rol (separados por coma):</label><br>
+    <input type="text" name="rol" value="{{ ', '.join(usuario.rol) }}"><br><br>
+
+    <label>¿Es anfitrión?</label>
+    <input type="checkbox" name="es_anfitrion" {% if usuario.es_anfitrion %}checked{% endif %}><br><br>
+
+    <label>CLABE bancaria:</label><br>
+    <input type="text" name="clabe_bancaria" value="{{ usuario.clabe_bancaria }}"><br><br>
+
+    <button type="submit">Actualizar</button>
+  </form>
+  <br>
+  <a href="/">⬅️ Volver</a>
+</body>
+</html>
