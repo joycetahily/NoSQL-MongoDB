@@ -48,9 +48,9 @@ def login():
             # Guardamos la información del usuario en la sesión
             session["usuario_id"] = str(user["_id"])
             session["usuario_nombre"] = user["nombre"]
-            session["usuario_rol"] = user.get("rol", [])  # <-- guardamos la lista completa de roles
+            session["usuario_rol"] = user.get("rol", []) 
 
-            flash("Inicio de sesión exitoso", "success")
+            flash("", "success")
             return redirect(url_for("dashboard"))
         else:
             flash("Correo o contraseña incorrectos", "danger")
@@ -206,7 +206,7 @@ def agregar_resena(id):
         "fecha_creacion": datetime.utcnow()
     }
 
-    reseñas.insert_one(nueva_resena)
+    reseñas.insert_one(comentario)
     flash("Reseña agregada correctamente.", "success")
     return redirect(url_for("ver_propiedad", id=id))
 
