@@ -157,17 +157,31 @@ def crear_propiedad():
     if request.method == "POST":
         # Campos del formulario
         titulo = request.form["titulo"]
-        precio_por_dia = float(request.form["precio_por_dia"])
+        precio_por_dia = Decimal128(str(request.form["precio_por_dia"]))  # Decimal128 para MongoDB
         tipo = request.form["tipo"]
         descripcion = request.form["descripcion"]
         reglas = request.form["reglas"]
-        servicios = [s.strip() for s in request.form["servicios"].split(",") if s.strip()]
+        servicios_validos = ['alberca', 'wifi', 'cable', 'botiquin', 'clima', 'calefaccion', 'cocina', 'estacionamiento']
+        servicios = [s.strip() for s in request.form["servicios"].split(",") if s.strip() in servicios_validos]
         ciudad = request.form["ciudad"]
         colonia = request.form["colonia"]
         calle_numero = request.form["calle_numero"]
 
-        # --- Aquí procesas las fotos ---
-        archivos = request.files.getlist('fotos')  # 'fotos' es el name del input del HTML
+        # Validaciones mínimas
+        if len(titulo.strip()) < 10:
+            flash("El título debe tener al menos 10 caracteres.", "error")
+            return redirect(url_for("crear_propiedad"))
+
+        if len(descripcion.strip()) < 50:
+            flash("La descripción debe tener al menos 50 caracteres.", "error")
+            return redirect(url_for("crear_propiedad"))
+
+        if not servicios:
+            flash("Debes seleccionar al menos un servicio válido.", "error")
+            return redirect(url_for("crear_propiedad"))
+
+        # Procesar fotos
+        archivos = request.files.getlist('fotos')
         nombres_guardados = []
 
         if not os.path.exists(app.config['UPLOAD_FOLDER_PROP']):
@@ -179,7 +193,14 @@ def crear_propiedad():
                 archivo.save(os.path.join(app.config['UPLOAD_FOLDER_PROP'], filename))
                 nombres_guardados.append(filename)
 
-        # --- Insertar en MongoDB ---
+        if len(nombres_guardados) == 0:
+            flash("Debes subir al menos una imagen de la propiedad.", "error")
+            return redirect(url_for("crear_propiedad"))
+
+        # ID del anfitrión (desde sesión)
+        anfitrion_id = ObjectId(session.get("usuario_id"))
+
+        # Crear documento para MongoDB
         propiedad = {
             "titulo": titulo,
             "precio_por_dia": precio_por_dia,
@@ -192,11 +213,11 @@ def crear_propiedad():
                 "colonia": colonia,
                 "calle_numero": calle_numero
             },
-            "fotos": nombres_guardados
+            "fotos": nombres_guardados,
+            "anfitrion_id": anfitrion_id
         }
 
         propiedades.insert_one(propiedad)
-        flash("Propiedad creada correctamente.", "success")
         return redirect(url_for("ver_propiedades"))
 
     return render_template("crear_propiedad.html")
