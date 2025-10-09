@@ -2,15 +2,12 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>{{ title or 'Airbnb NoSQL' }}</title>
+  <title>{{ title or 'AlojaT' }}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="/">Airbnb NoSQL</a>
-    <div>
       {% if session.usuario_id %}
       <a href="/logout" class="btn btn-outline-light">Cerrar sesión</a>
       {% endif %}
