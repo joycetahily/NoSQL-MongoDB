@@ -354,14 +354,12 @@ def ver_propiedad(id):
         reservas_cursor = reservas.find({
             "huesped_id": usuario_id,
             "propiedad_id": ObjectId(id),
-            "estado": "completada"
         })
         reservas_usuario = [r["_id"] for r in reservas_cursor]  # IDs de reservas completadas
 
     # --- Obtener fechas ocupadas ---
     reservas_completadas = reservas.find({
         "propiedad_id": ObjectId(id),
-        "estado": "completada"
     })
 
     fechas_ocupadas = []
@@ -392,7 +390,6 @@ def agregar_resena(id):
     reserva = reservas.find_one({
         "huesped_id": usuario_id,
         "propiedad_id": ObjectId(id),
-        "estado": "completada"
     })
 
     if not reserva:
@@ -432,7 +429,6 @@ def reservar(id):
     # --- Validar disponibilidad ---
     conflicto = reservas.find_one({
         "propiedad_id": propiedad["_id"],
-        "estado": "completada",
         "fecha_inicio": {"$lt": fecha_fin},
         "fecha_fin": {"$gt": fecha_inicio}
     })
@@ -454,7 +450,6 @@ def reservar(id):
         "fecha_inicio": fecha_inicio,
         "fecha_fin": fecha_fin,
         "numero_huespedes": numero_huespedes,
-        "estado": "completada",
         "fecha_reserva": datetime.now(),
         "desglose_precio": {
             "precio_por_noche": precio_por_noche,
@@ -473,9 +468,7 @@ def reservar(id):
         "reserva_id": reserva_id,
         "huesped_id": ObjectId(session["usuario_id"]),
         "monto": total,
-        "estado": "pago_confirmado",
         "fecha_creacion": datetime.now(),
-        "fecha_confirmacion": datetime.now()
     }
     db.pagos.insert_one(pago)
 

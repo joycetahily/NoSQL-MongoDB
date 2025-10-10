@@ -21,7 +21,6 @@
         <p><strong>Fecha de inicio:</strong> {{ reserva.fecha_inicio.strftime('%d/%m/%Y') }}</p>
         <p><strong>Fecha de fin:</strong> {{ reserva.fecha_fin.strftime('%d/%m/%Y') }}</p>
         <p><strong>Número de huéspedes:</strong> {{ reserva.numero_huespedes }}</p>
-        <p><strong>Estado reserva:</strong> {{ reserva.estado }}</p>
         <p><strong>Fecha de reserva:</strong> {{ reserva.fecha_reserva.strftime('%d/%m/%Y') }}</p>
         <p><strong>CLABE bancaria del anfitrión:</strong> {{ clabe }}</p>
     </div>
@@ -47,9 +46,7 @@
     <h2>Pago</h2>
     <div class="info">
         <p><strong>Monto pagado:</strong> ${{ pago.monto }}</p>
-        <p><strong>Estado del pago:</strong> {{ pago.estado }}</p>
         <p><strong>Fecha de creación:</strong> {{ pago.fecha_creacion.strftime('%d/%m/%Y') }}</p>
-        <p><strong>Fecha de confirmación:</strong> {{ pago.fecha_confirmacion.strftime('%d/%m/%Y') }}</p>
     </div>
 </body>
 </html>
