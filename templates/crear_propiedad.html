@@ -63,7 +63,7 @@
   <nav class="navbar navbar-dark mb-4">
     <div class="container d-flex justify-content-between align-items-center">
       <h4 class="text-light m-0">AlojaT</h4>
-      <a href="{{ url_for('ver_propiedades') }}" class="btn btn-light text-dark fw-semibold">Regresar</a>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-light text-dark fw-semibold">Regresar</a>
     </div>
   </nav>
 
@@ -93,7 +93,7 @@
   </div>
 
   <div class="mb-3">
-    <label class="form-label">Fotos (sube al menos 4 archivos)</label>
+    <label class="form-label">Fotos (sube al menos 4 archivos de formato .jpg)</label>
     <input type="file" name="fotos" class="form-control" multiple required>
     <small class="text-muted">Puedes seleccionar varias imágenes a la vez.</small>
   </div>
@@ -134,11 +134,23 @@
           <textarea name="descripcion" class="form-control" rows="3" placeholder="Describe brevemente la propiedad..."></textarea>
         </div>
 
-        <div class="mb-3">
-          <label class="form-label">Servicios (separados por coma)</label>
-          <input type="text" name="servicios" class="form-control" placeholder="Por ejemplo: WiFi, Cocina, Aire Acondicionado">
-          <small class="text-muted">Escribe los servicios separados por comas.</small>
+      <div class="mb-3">
+    <label class="form-label fw-bold">Servicios disponibles</label>
+    <div class="row">
+        {% set servicios_validos = ['alberca', 'wifi', 'cable', 'botiquin', 'clima', 'calefaccion', 'cocina', 'estacionamiento'] %}
+        {% for servicio in servicios_validos %}
+        <div class="col-md-6">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="servicios" value="{{ servicio }}" id="{{ servicio }}">
+                <label class="form-check-label text-capitalize" for="{{ servicio }}">
+                    {{ servicio }}
+                </label>
+            </div>
         </div>
+        {% endfor %}
+    </div>
+    <small class="text-muted">Selecciona uno o varios servicios que ofrece la propiedad.</small>
+</div>
 
         <div class="mb-3">
           <label class="form-label">Reglas</label>

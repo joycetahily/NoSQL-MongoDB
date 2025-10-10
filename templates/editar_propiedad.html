@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Propiedad</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: scale(1.01);
+        }
+
+        .card-header {
+            background-color: #d97706;
+            color: white;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border: none;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .btn-primary {
+            background-color: #d97706;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #d97706;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card col-md-8 mx-auto my-5">
+            <div class="card-header text-center py-3">
+                <h3 class="mb-0">Editar Propiedad</h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Título</label>
+                        <input type="text" name="titulo" value="{{ propiedad.titulo }}" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Precio por día</label>
+                        <input type="number" name="precio_por_dia" value="{{ propiedad.precio_por_dia.to_decimal() }}"
+                            class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tipo</label>
+                        <input type="text" name="tipo" value="{{ propiedad.tipo }}" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Descripción</label>
+                        <textarea name="descripcion" class="form-control"
+                            rows="4">{{ propiedad.descripcion }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Reglas</label>
+                        <textarea name="reglas" class="form-control" rows="3">{{ propiedad.reglas }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Servicios disponibles</label>
+                        <div class="row">
+                            {% set servicios_validos = ['alberca', 'wifi', 'cable', 'botiquin', 'clima', 'calefaccion',
+                            'cocina', 'estacionamiento'] %}
+                            {% for servicio in servicios_validos %}
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="servicios"
+                                        value="{{ servicio }}" id="{{ servicio }}" {% if servicio in propiedad.servicios
+                                        %}checked{% endif %}>
+                                    <label class="form-check-label text-capitalize" for="{{ servicio }}">
+                                        {{ servicio }}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+
+                    <h5 class="mt-4 mb-3 text-primary fw-bold">Ubicación</h5>
+
+                    <div class="mb-3">
+                        <label class="form-label">Ciudad</label>
+                        <input type="text" name="ciudad" value="{{ propiedad.ubicacion.ciudad }}" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Colonia</label>
+                        <input type="text" name="colonia" value="{{ propiedad.ubicacion.colonia }}"
+                            class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Calle y número</label>
+                        <input type="text" name="calle_numero" value="{{ propiedad.ubicacion.calle_numero }}"
+                            class="form-control">
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('ver_propiedades') }}" class="btn btn-secondary px-4">Volver</a>
+                        <button type="submit" class="btn btn-primary px-4">Guardar cambios</button>
+                    </div>
+                </form>
+
+                <!-- Botón de eliminar -->
+                <div class="text-center mt-4">
+                    <button id="btnEliminar" class="btn btn-danger w-100 py-2">Eliminar propiedad</button>
+                </div>
+
+                <!-- Confirmación de eliminación -->
+                <div id="confirmacion" class="text-center mt-3 d-none">
+                    <p class="fw-bold text-danger">¿Seguro que deseas eliminar esta propiedad?</p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <form action="{{ url_for('eliminar_propiedad', id=propiedad._id) }}" method="POST">
+                            <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+                        </form>
+                        <button id="btnCancelar" class="btn btn-secondary">No</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const btnEliminar = document.getElementById('btnEliminar');
+        const btnCancelar = document.getElementById('btnCancelar');
+        const confirmacion = document.getElementById('confirmacion');
+
+        btnEliminar.addEventListener('click', () => {
+            confirmacion.classList.remove('d-none');
+            btnEliminar.classList.add('d-none');
+        });
+
+        btnCancelar.addEventListener('click', () => {
+            confirmacion.classList.add('d-none');
+            btnEliminar.classList.remove('d-none');
+        });
+    </script>
+</body>
+
+</html>

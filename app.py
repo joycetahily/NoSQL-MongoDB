@@ -143,14 +143,37 @@ def registro():
 def ver_propiedades():
     if "usuario_id" not in session:
         return redirect(url_for("login"))
-    data = list(propiedades.find())
-    return render_template("propiedades.html", propiedades=data, usuario=session["usuario_nombre"])
+    
+    usuario_id = session["usuario_id"]
+    rol = session.get("usuario_rol", [])
+
+    # Si el usuario es anfitrión y también huésped, ve todas las propiedades
+    if "anfitrion" in rol and "huesped" in rol:
+        data = list(propiedades.find())
+    # Si el usuario es solo anfitrión, ve solo sus propiedades
+    elif "anfitrion" in rol:
+        data = list(propiedades.find())
+    # Si el usuario es solo huésped o tiene otro rol
+    else:
+        data = list(propiedades.find())
+
+    # Marcar cuáles propiedades son del anfitrión logueado
+    for prop in data:
+        prop["propia"] = (str(prop.get("anfitrion_id")) == usuario_id)
+        
+    return render_template(
+        "propiedades.html", 
+        propiedades=data, 
+        rol=rol, 
+        usuario=session["usuario_nombre"]
+    )
+ 
+
 
 @app.route("/logout")
 def logout():
     session.clear()  # Elimina toda la información de sesión
     return redirect(url_for("login"))  # Redirige al login
-
 # ---------------- CREAR NUEVA PROPIEDAD ----------------
 @app.route("/crear_propiedad", methods=["GET", "POST"])
 def crear_propiedad():
@@ -161,8 +184,10 @@ def crear_propiedad():
         tipo = request.form["tipo"]
         descripcion = request.form["descripcion"]
         reglas = request.form["reglas"]
-        servicios_validos = ['alberca', 'wifi', 'cable', 'botiquin', 'clima', 'calefaccion', 'cocina', 'estacionamiento']
-        servicios = [s.strip() for s in request.form["servicios"].split(",") if s.strip() in servicios_validos]
+
+        # ✅ Obtener servicios seleccionados desde checkboxes
+        servicios = request.form.getlist("servicios")
+
         ciudad = request.form["ciudad"]
         colonia = request.form["colonia"]
         calle_numero = request.form["calle_numero"]
@@ -177,7 +202,7 @@ def crear_propiedad():
             return redirect(url_for("crear_propiedad"))
 
         if not servicios:
-            flash("Debes seleccionar al menos un servicio válido.", "error")
+            flash("Debes seleccionar al menos un servicio.", "error")
             return redirect(url_for("crear_propiedad"))
 
         # Procesar fotos
@@ -207,7 +232,7 @@ def crear_propiedad():
             "tipo": tipo,
             "descripcion": descripcion,
             "reglas": reglas,
-            "servicios": servicios,
+            "servicios": servicios,  # 👈 se guarda como array
             "ubicacion": {
                 "ciudad": ciudad,
                 "colonia": colonia,
@@ -221,6 +246,84 @@ def crear_propiedad():
         return redirect(url_for("ver_propiedades"))
 
     return render_template("crear_propiedad.html")
+    
+    
+# ---------------- EDITAR PROPIEDAD ----------------
+@app.route("/editar_propiedad/<id>", methods=["GET", "POST"])
+def editar_propiedad(id):
+    if "usuario_id" not in session:
+        return redirect(url_for("login"))
+
+    propiedad = propiedades.find_one({"_id": ObjectId(id)})
+
+    if not propiedad:
+        flash("Propiedad no encontrada", "danger")
+        return redirect(url_for("ver_propiedades"))
+
+    # Solo el anfitrión dueño de la propiedad puede editarla
+    if propiedad["anfitrion_id"] != ObjectId(session["usuario_id"]):
+        flash("No tienes permiso para editar esta propiedad", "danger")
+        return redirect(url_for("ver_propiedades"))
+
+    # ✅ Este bloque debe estar dentro de la función
+    if request.method == "POST":
+        titulo = request.form["titulo"]
+        precio_por_dia = Decimal128(str(request.form["precio_por_dia"]))
+        tipo = request.form["tipo"]
+        descripcion = request.form["descripcion"]
+        reglas = request.form["reglas"]
+
+        # ✅ Servicios seleccionados (checkbox)
+        servicios = request.form.getlist("servicios")
+
+        ciudad = request.form["ciudad"]
+        colonia = request.form["colonia"]
+        calle_numero = request.form["calle_numero"]
+
+        propiedades.update_one(
+            {"_id": ObjectId(id)},
+            {"$set": {
+                "titulo": titulo,
+                "precio_por_dia": precio_por_dia,
+                "tipo": tipo,
+                "descripcion": descripcion,
+                "reglas": reglas,
+                "servicios": servicios,
+                "ubicacion": {
+                    "ciudad": ciudad,
+                    "colonia": colonia,
+                    "calle_numero": calle_numero
+                }
+            }}
+        )
+
+        flash("Propiedad actualizada correctamente", "success")
+        return redirect(url_for("ver_propiedades"))
+
+    return render_template("editar_propiedad.html", propiedad=propiedad)
+
+
+# ---------------- ELIMINAR PROPIEDAD ----------------
+@app.route("/eliminar_propiedad/<id>", methods=["POST"])
+def eliminar_propiedad(id):
+    if "usuario_id" not in session:
+        return redirect(url_for("login"))
+
+    propiedad = propiedades.find_one({"_id": ObjectId(id)})
+
+    if not propiedad:
+        flash("Propiedad no encontrada", "danger")
+        return redirect(url_for("ver_propiedades"))
+
+    # Solo el anfitrión dueño de la propiedad puede eliminarla
+    if propiedad["anfitrion_id"] != ObjectId(session["usuario_id"]):
+        flash("No tienes permiso para eliminar esta propiedad", "danger")
+        return redirect(url_for("ver_propiedades"))
+
+    propiedades.delete_one({"_id": ObjectId(id)})
+    flash("Propiedad eliminada correctamente", "success")
+    return redirect(url_for("ver_propiedades"))
+
 
 # ---------------- VER PROPIEDAD Y RESEÑAS ----------------
 @app.route("/propiedades/<id>")
