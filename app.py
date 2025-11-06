@@ -23,20 +23,17 @@ db = client["AlojaT"]
 usuarios = db["usuarios"]
 propiedades = db["propiedades"]
 reseñas = db["reseñas"]
-reservas = db["reservas"]   
-pagos = db["pagos"]   
+reservas = db["reservas"]    
+pagos = db["pagos"]    
 
 # --- Función para encriptar contraseña ---
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# Carpeta donde se guardarán los documentos de usuarios
+# Carpetas de subida
 UPLOAD_FOLDER = 'static/documentos'
-# Carpeta donde se guardarán las fotos de propiedades
 UPLOAD_FOLDER_PROP = 'static/imagenes_propiedades'
-
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['UPLOAD_FOLDER_PROP'] = UPLOAD_FOLDER_PROP
 
@@ -59,15 +56,12 @@ def login():
         user = usuarios.find_one({"correo": correo, "contraseña": contraseña})
 
         if user:
-            # Guardamos la información del usuario en la sesión
             session["usuario_id"] = str(user["_id"])
             session["usuario_nombre"] = user["nombre"]
             session["usuario_rol"] = user.get("rol", []) 
-
             return redirect(url_for("dashboard"))
         else:
             flash("Correo o contraseña incorrectos", "danger")
-
     return render_template("login.html")
 
 
@@ -96,7 +90,6 @@ def registro():
                 flash("Debes ingresar una CLABE válida de 18 dígitos.", "danger")
                 return redirect(url_for("registro"))
 
-        # Manejo de archivos
         archivos = request.files.getlist("documento_identidad")
         if len(archivos) < 2:
             flash("Debes subir al menos 2 documentos de identidad.", "danger")
@@ -138,74 +131,89 @@ def registro():
     return render_template("registro.html")
 
 
-# ---------------- VER PROPIEDADES ----------------
-@app.route("/propiedades")
+# ---------------- VER PROPIEDADES (CORREGIDO Y FUSIONADO) ----------------
+@app.route("/propiedades", methods=["GET"])
 def ver_propiedades():
     if "usuario_id" not in session:
         return redirect(url_for("login"))
     
+    # --- (LÓGICA DE FILTROS DEL ARCHIVO "NUEVO") ---
+    tipo = request.args.get("tipo", "")
+    min_precio = request.args.get("min_precio", 0, type=float)
+    max_precio = request.args.get("max_precio", 999999, type=float)
+    servicios = request.args.getlist("servicios")
+    calificacion_minima = request.args.get("calificacion_minima", 0, type=float) 
+
+    # --- Construir el filtro de MongoDB ---
+    filtro = {}
+    filtro["precio_por_dia"] = {"$gte": min_precio, "$lte": max_precio}
+
+    if tipo:
+        filtro["tipo"] = tipo.lower()
+    if servicios:
+        filtro["servicios"] = {"$all": servicios}
+    if calificacion_minima > 0: 
+        filtro["calificacion_promedio"] = {"$gte": calificacion_minima} 
+
+    # --- (LÓGICA DE PROPIEDADES DEL ARCHIVO "ANTERIOR", PERO APLICANDO EL FILTRO) ---
     usuario_id = session["usuario_id"]
     rol = session.get("usuario_rol", [])
 
-    # Si el usuario es anfitrión y también huésped, ve todas las propiedades
-    if "anfitrion" in rol and "huesped" in rol:
-        data = list(propiedades.find())
-    # Si el usuario es solo anfitrión, ve solo sus propiedades
-    elif "anfitrion" in rol:
-        data = list(propiedades.find())
-    # Si el usuario es solo huésped o tiene otro rol
-    else:
-        data = list(propiedades.find())
+    # Buscamos en la DB aplicando el FILTRO
+    data = list(propiedades.find(filtro)) 
 
+    # --- (LÓGICA DE "prop.propia" DEL ARCHIVO "ANTERIOR") ---
     # Marcar cuáles propiedades son del anfitrión logueado
     for prop in data:
         prop["propia"] = (str(prop.get("anfitrion_id")) == usuario_id)
-        
+        # (Estas líneas son buenas prácticas de tu archivo "nuevo")
+        prop["_id"] = str(prop["_id"])
+        prop["fotos"] = prop.get("fotos", [])
+        prop["ubicacion"] = prop.get("ubicacion", {})
+         
     return render_template(
         "propiedades.html", 
         propiedades=data, 
         rol=rol, 
-        usuario=session["usuario_nombre"]
+        session=session, # Pasamos la sesión completa
+        # (Pasamos las variables del filtro para que se queden seleccionadas)
+        tipo=tipo,
+        min_precio=int(min_precio),
+        max_precio=int(max_precio),
+        servicios=servicios,
+        calificacion_minima=calificacion_minima
     )
- 
 
 
 @app.route("/logout")
 def logout():
     session.clear()  # Elimina toda la información de sesión
     return redirect(url_for("login"))  # Redirige al login
+
 # ---------------- CREAR NUEVA PROPIEDAD ----------------
 @app.route("/crear_propiedad", methods=["GET", "POST"])
 def crear_propiedad():
     if request.method == "POST":
-        # Campos del formulario
         titulo = request.form["titulo"]
-        precio_por_dia = Decimal128(str(request.form["precio_por_dia"]))  # Decimal128 para MongoDB
+        precio_por_dia = Decimal128(str(request.form["precio_por_dia"]))
         tipo = request.form["tipo"]
         descripcion = request.form["descripcion"]
         reglas = request.form["reglas"]
-
-        # ✅ Obtener servicios seleccionados desde checkboxes
         servicios = request.form.getlist("servicios")
-
         ciudad = request.form["ciudad"]
         colonia = request.form["colonia"]
         calle_numero = request.form["calle_numero"]
 
-        # Validaciones mínimas
         if len(titulo.strip()) < 10:
             flash("El título debe tener al menos 10 caracteres.", "error")
             return redirect(url_for("crear_propiedad"))
-
         if len(descripcion.strip()) < 50:
             flash("La descripción debe tener al menos 50 caracteres.", "error")
             return redirect(url_for("crear_propiedad"))
-
         if not servicios:
             flash("Debes seleccionar al menos un servicio.", "error")
             return redirect(url_for("crear_propiedad"))
 
-        # Procesar fotos
         archivos = request.files.getlist('fotos')
         nombres_guardados = []
 
@@ -222,17 +230,15 @@ def crear_propiedad():
             flash("Debes subir al menos una imagen de la propiedad.", "error")
             return redirect(url_for("crear_propiedad"))
 
-        # ID del anfitrión (desde sesión)
         anfitrion_id = ObjectId(session.get("usuario_id"))
 
-        # Crear documento para MongoDB
         propiedad = {
             "titulo": titulo,
             "precio_por_dia": precio_por_dia,
             "tipo": tipo,
             "descripcion": descripcion,
             "reglas": reglas,
-            "servicios": servicios,  # 👈 se guarda como array
+            "servicios": servicios,
             "ubicacion": {
                 "ciudad": ciudad,
                 "colonia": colonia,
@@ -260,22 +266,17 @@ def editar_propiedad(id):
         flash("Propiedad no encontrada", "danger")
         return redirect(url_for("ver_propiedades"))
 
-    # Solo el anfitrión dueño de la propiedad puede editarla
     if propiedad["anfitrion_id"] != ObjectId(session["usuario_id"]):
         flash("No tienes permiso para editar esta propiedad", "danger")
         return redirect(url_for("ver_propiedades"))
 
-    # ✅ Este bloque debe estar dentro de la función
     if request.method == "POST":
         titulo = request.form["titulo"]
         precio_por_dia = Decimal128(str(request.form["precio_por_dia"]))
         tipo = request.form["tipo"]
         descripcion = request.form["descripcion"]
         reglas = request.form["reglas"]
-
-        # ✅ Servicios seleccionados (checkbox)
         servicios = request.form.getlist("servicios")
-
         ciudad = request.form["ciudad"]
         colonia = request.form["colonia"]
         calle_numero = request.form["calle_numero"]
@@ -296,7 +297,6 @@ def editar_propiedad(id):
                 }
             }}
         )
-
         flash("Propiedad actualizada correctamente", "success")
         return redirect(url_for("ver_propiedades"))
 
@@ -315,7 +315,6 @@ def eliminar_propiedad(id):
         flash("Propiedad no encontrada", "danger")
         return redirect(url_for("ver_propiedades"))
 
-    # Solo el anfitrión dueño de la propiedad puede eliminarla
     if propiedad["anfitrion_id"] != ObjectId(session["usuario_id"]):
         flash("No tienes permiso para eliminar esta propiedad", "danger")
         return redirect(url_for("ver_propiedades"))
@@ -338,7 +337,6 @@ def ver_propiedad(id):
         flash("Propiedad no encontrada", "danger")
         return redirect(url_for("ver_propiedades"))
 
-    # Traer reseñas y agregar nombre del usuario
     resenas_cursor = reseñas.find({"propiedad_id": ObjectId(id)})
     resenas = []
     for r in resenas_cursor:
@@ -347,7 +345,6 @@ def ver_propiedad(id):
         r["fecha"] = r["fecha_creacion"].strftime("%d/%m/%Y")
         resenas.append(r)
 
-    # Verificar si el usuario tiene una reserva completada en esta propiedad
     reservas_usuario = []
     if "usuario_id" in session:
         usuario_id = ObjectId(session["usuario_id"])
@@ -355,13 +352,9 @@ def ver_propiedad(id):
             "huesped_id": usuario_id,
             "propiedad_id": ObjectId(id),
         })
-        reservas_usuario = [r["_id"] for r in reservas_cursor]  # IDs de reservas completadas
+        reservas_usuario = [r["_id"] for r in reservas_cursor]
 
-    # --- Obtener fechas ocupadas ---
-    reservas_completadas = reservas.find({
-        "propiedad_id": ObjectId(id),
-    })
-
+    reservas_completadas = reservas.find({"propiedad_id": ObjectId(id)})
     fechas_ocupadas = []
     for r in reservas_completadas:
         fecha = r["fecha_inicio"]
@@ -377,7 +370,7 @@ def ver_propiedad(id):
         fechas_ocupadas=fechas_ocupadas
     )
 
-# ---------------- AGREGAR RESEÑA ----------------
+# ---------------- AGREGAR RESEÑA (CON LÓGICA DE CALIFICACIÓN) ----------------
 @app.route("/agregar_resena/<id>", methods=["POST"])
 def agregar_resena(id):
     if "usuario_id" not in session:
@@ -386,7 +379,6 @@ def agregar_resena(id):
 
     usuario_id = ObjectId(session["usuario_id"])
 
-    # Verificar que exista una reserva completada
     reserva = reservas.find_one({
         "huesped_id": usuario_id,
         "propiedad_id": ObjectId(id),
@@ -400,7 +392,7 @@ def agregar_resena(id):
     calificacion = int(request.form["calificacion"])
 
     nueva_resena = {
-        "reserva_id": reserva["_id"],   # obligatorio para pasar el schema
+        "reserva_id": reserva["_id"],
         "propiedad_id": ObjectId(id),
         "huesped_id": usuario_id,
         "calificacion": calificacion,
@@ -410,6 +402,27 @@ def agregar_resena(id):
 
     reseñas.insert_one(nueva_resena)
     flash("Reseña agregada correctamente.", "success")
+    
+    # --- (LÓGICA DE CÁLCULO DE PROMEDIO DEL ARCHIVO "NUEVO") ---
+    try:
+        pipeline = [
+            {"$match": {"propiedad_id": ObjectId(id)}},
+            {"$group": {
+                "_id": "$propiedad_id",
+                "avg_rating": {"$avg": "$calificacion"}
+            }}
+        ]
+        resultado_avg = list(reseñas.aggregate(pipeline))
+        
+        if resultado_avg:
+            calif_promedio = round(resultado_avg[0]['avg_rating'], 1) 
+            propiedades.update_one(
+                {"_id": ObjectId(id)},
+                {"$set": {"calificacion_promedio": calif_promedio}}
+            )
+    except Exception as e:
+        print(f"Error al actualizar calificación promedio: {e}")
+    
     return redirect(url_for("ver_propiedad", id=id))
 
 
@@ -420,13 +433,11 @@ def reservar(id):
         flash("Propiedad no encontrada.", "danger")
         return redirect(url_for("ver_propiedades"))
 
-    # Datos del formulario
     fecha_inicio = datetime.strptime(request.form["fecha_inicio"], "%Y-%m-%d")
     fecha_fin = datetime.strptime(request.form["fecha_fin"], "%Y-%m-%d")
     numero_huespedes = int(request.form["numero_huespedes"])
     numero_noches = (fecha_fin - fecha_inicio).days
 
-    # --- Validar disponibilidad ---
     conflicto = reservas.find_one({
         "propiedad_id": propiedad["_id"],
         "fecha_inicio": {"$lt": fecha_fin},
@@ -437,13 +448,11 @@ def reservar(id):
         flash("Lo sentimos, la propiedad ya está reservada para esas fechas.", "danger")
         return redirect(url_for("ver_propiedad", id=id))
 
-    # Conversión a Decimal128
     precio_por_noche = Decimal128(Decimal(str(propiedad.get("precio_por_dia", 0))))
     subtotal = Decimal128(Decimal(str(precio_por_noche.to_decimal() * numero_noches)))
     comision_servicio = Decimal128(Decimal(str(subtotal.to_decimal() * Decimal("0.10"))))
     total = Decimal128(Decimal(str(subtotal.to_decimal() + comision_servicio.to_decimal())))
 
-    # Crear documento de reserva
     reserva = {
         "propiedad_id": propiedad["_id"],
         "huesped_id": ObjectId(session["usuario_id"]),
@@ -460,10 +469,8 @@ def reservar(id):
         }
     }
 
-    # Insertar reserva en MongoDB
     reserva_id = db.reservas.insert_one(reserva).inserted_id
 
-    # Crear documento de pago
     pago = {
         "reserva_id": reserva_id,
         "huesped_id": ObjectId(session["usuario_id"]),
@@ -472,13 +479,11 @@ def reservar(id):
     }
     db.pagos.insert_one(pago)
 
-    # Generar PDF del ticket
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", "B", 16)
     pdf.cell(0, 10, "Ticket de Reserva", ln=True, align="C")
     pdf.ln(10)
-
     pdf.set_font("Arial", "", 12)
     pdf.cell(0, 8, f"Reserva ID: {reserva_id}", ln=True)
     pdf.cell(0, 8, f"Propiedad: {propiedad['titulo']}", ln=True)
@@ -495,12 +500,10 @@ def reservar(id):
     pdf.cell(0, 8, f"  Total: ${total.to_decimal()}", ln=True)
     pdf.ln(5)
 
-    # Obtener CLABE del anfitrión
     anfitrion = db.usuarios.find_one({"_id": propiedad["anfitrion_id"]})
     clabe = anfitrion.get("clabe_bancaria", "No disponible")
     pdf.cell(0, 8, f"CLABE bancaria del anfitrión: {clabe}", ln=True)
 
-    # Enviar PDF al navegador
     pdf_output = io.BytesIO()
     pdf.output(pdf_output)
     pdf_output.seek(0)
@@ -509,4 +512,3 @@ def reservar(id):
 # ---------------- EJECUTAR APP ----------------
 if __name__ == "__main__":
     app.run(debug=True)
-

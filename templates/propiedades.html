@@ -19,7 +19,6 @@
       font-family: 'Poppins', sans-serif;
     }
 
-    /* NAVBAR */
     .navbar {
       background: linear-gradient(90deg, var(--naranja) 0%, var(--cafe) 100%);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -42,16 +41,14 @@
       color: var(--cafe);
     }
 
-    /* TÍTULO */
     h2 {
       color: var(--cafe);
       font-weight: 700;
       text-align: center;
       margin-top: 30px;
-      margin-bottom: 40px;
+      margin-bottom: 30px;
     }
 
-    /* CARDS */
     .card {
       border: none;
       border-radius: 15px;
@@ -105,6 +102,14 @@
       background-color: #3e2417;
     }
 
+    .filtros {
+      background-color: white;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      margin-bottom: 40px;
+    }
+
     footer {
       text-align: center;
       color: #7a6252;
@@ -112,12 +117,98 @@
       margin-top: 40px;
       padding: 20px 0;
     }
+
+    label {
+      font-weight: 600;
+      color: var(--cafe);
+    }
+
+    .form-check-input:checked {
+      background-color: var(--naranja);
+      border-color: var(--naranja);
+    }
+
+    /* === 1. ESTILOS CSS CORRECTOS === */
+    .range-slider-container {
+      position: relative;
+      width: 100%;
+      height: 30px;
+      /* Altura para acomodar los pulgares */
+      margin-top: 10px;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Pista base (gris) */
+    .slider-track {
+      position: absolute;
+      width: 100%;
+      height: 6px;
+      background-color: #ddd;
+      border-radius: 5px;
+      z-index: 1;
+    }
+
+    /* Pista seleccionada (naranja) */
+    .slider-range {
+      position: absolute;
+      height: 6px;
+      background-color: var(--naranja);
+      border-radius: 5px;
+      z-index: 2;
+    }
+
+    /* Estilos para AMBOS inputs range */
+    .range-slider-container input[type="range"] {
+      position: absolute;
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      pointer-events: none;
+      z-index: 3;
+      margin: 0;
+    }
+
+    /* Pulgar (thumb) del slider */
+    .range-slider-container input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--naranja);
+      cursor: pointer;
+      border: 2px solid white;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+      pointer-events: auto;
+      margin-top: -6px;
+    }
+
+    .range-slider-container input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--naranja);
+      cursor: pointer;
+      border: 2px solid white;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+      pointer-events: auto;
+    }
+
+    .price-values {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--cafe);
+    }
   </style>
 </head>
 
 <body>
 
-  <!-- NAVBAR -->
   <nav class="navbar navbar-expand-lg">
     <div class="container-fluid d-flex justify-content-between align-items-center">
       <a class="navbar-brand" href="#">AlojaT</a>
@@ -127,80 +218,179 @@
     </div>
   </nav>
 
-  <!-- CONTENIDO -->
   <div class="container mt-4">
-    <a href="{{ url_for('dashboard') }}" class="btn btn-light text-dark fw-semibold">Regresar</a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-light text-dark fw-semibold mb-3">Regresar</a>
     <h2>PROPIEDADES DISPONIBLES</h2>
+
+    <form method="GET" action="{{ url_for('ver_propiedades') }}" class="mb-4 p-4 bg-white rounded-3 shadow-sm border">
+
+  <div class="row align-items-center g-4">
+
+    <div class="col-lg-4 col-md-6">
+      <label class="form-label fw-semibold text-brown">Rango de precio ($/día)</label>
+      <div class="range-slider-container">
+        <div class="slider-track"></div>
+        <div class="slider-range" id="sliderRange"></div>
+        <input type="range" id="minPrecio" name="min_precio" min="0" max="5000" step="100"
+               value="{{ min_precio }}" class="form-range">
+        <input type="range" id="maxPrecio" name="max_precio" min="0" max="5000" step="100"
+               value="{{ max_precio }}" class="form-range">
+      </div>
+      <div class="w-100 d-flex justify-content-between price-values">
+        <span id="minLabel" class="fw-semibold">${{ min_precio }}</span>
+        <span id="maxLabel" class="fw-semibold">${{ max_precio }}</span>
+      </div>
+    </div>
+
+    <div class="col-lg-2 col-md-6">
+      <label for="tipo" class="form-label fw-semibold text-brown">Tipo de propiedad</label>
+      <select name="tipo" id="tipo" class="form-select">
+        <option value="">Todos</option>
+        <option value="casa" {% if tipo == 'casa' %}selected{% endif %}>Casa</option>
+        <option value="departamento" {% if tipo == 'departamento' %}selected{% endif %}>Departamento</option>
+        <option value="cabaña" {% if tipo == 'cabaña' %}selected{% endif %}>Cabaña</option>
+      </select>
+    </div>
+
+    <div class="col-lg-2 col-md-6">
+      <label for="calificacion" class="form-label fw-semibold text-brown">Calificación</label>
+      <select name="calificacion_minima" id="calificacion" class="form-select">
+        <option value="0" {% if calificacion_minima == 0 %}selected{% endif %}>Cualquiera</option>
+        <option value="1" {% if calificacion_minima == 1 %}selected{% endif %}>★ 1 o más</option>
+        <option value="2" {% if calificacion_minima == 2 %}selected{% endif %}>★ 2 o más</option>
+        <option value="3" {% if calificacion_minima == 3 %}selected{% endif %}>★ 3 o más</option>
+        <option value="4" {% if calificacion_minima == 4 %}selected{% endif %}>★ 4 o más</option>
+        <option value="5" {% if calificacion_minima == 5 %}selected{% endif %}>★ 5</option>
+      </select>
+    </div>
+
+    <div class="col-lg-4">
+      <label class="form-label fw-semibold text-brown">Servicios disponibles</label>
+      <div class="border rounded p-3 small shadow-sm bg-light" style="max-height: 130px; overflow-y: auto;">
+        {% set lista_servicios = ['alberca', 'wifi', 'cable', 'botiquin', 'clima', 'calefaccion', 'cocina', 'estacionamiento'] %}
+        <div class="row">
+          {% for serv in lista_servicios %}
+          <div class="col-6">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="servicios" value="{{ serv }}"
+                     {% if serv in servicios %}checked{% endif %}>
+              <label class="form-check-label text-capitalize">{{ serv }}</label>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+  </div>
+  <div class="text-center mt-4">
+    <button type="submit" class="btn btn-orange px-4">Aplicar filtros</button>
+    <a href="{{ url_for('ver_propiedades') }}" class="btn btn-brown px-4">Limpiar</a>
+  </div>
+</form>
+
 
     <div class="row">
       {% for prop in propiedades %}
       <div class="col-md-6 col-lg-4 mb-4">
         <div class="card shadow-sm h-100">
-
           {% if prop.fotos %}
           <div id="carousel{{ loop.index }}" class="carousel slide" data-bs-ride="carousel">
             <div class="carousel-inner">
               {% for foto in prop.fotos %}
               <div class="carousel-item {% if loop.first %}active{% endif %}">
                 <img src="{{ url_for('static', filename='imagenes_propiedades/' ~ foto) }}" class="d-block w-100"
-                  alt="Foto propiedad">
+                     alt="Foto propiedad">
               </div>
               {% endfor %}
             </div>
-            <button class="carousel-control-prev" type="button" data-bs-target="#carousel{{ loop.index }}"
-              data-bs-slide="prev">
-              <span class="carousel-control-prev-icon"></span>
-            </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#carousel{{ loop.index }}"
-              data-bs-slide="next">
-              <span class="carousel-control-next-icon"></span>
-            </button>
           </div>
           {% endif %}
-
           <div class="card-body">
             <h5 class="card-title">{{ prop.titulo }}</h5>
             <p class="card-text"><strong>Tipo:</strong> {{ prop.tipo }}</p>
             <p class="card-text"><strong>Precio por día:</strong> ${{ prop.precio_por_dia }}</p>
             <p class="card-text">
-              <strong>Ubicación:</strong> {{ prop.ubicacion.calle_numero }},
-              {{ prop.ubicacion.colonia }}, {{ prop.ubicacion.ciudad }}
+              <strong>Ubicación:</strong> {{ prop.ubicacion.calle_numero }}, {{ prop.ubicacion.colonia }},
+              {{ prop.ubicacion.ciudad }}
             </p>
-
-            <a href="{{ url_for('ver_propiedad', id=prop._id) }}" class="btn btn-orange w-100 mt-2">
-              Ver detalles y reseñas
-            </a>
-
+            <a href="{{ url_for('ver_propiedad', id=prop._id) }}" class="btn btn-orange w-100 mt-2">Ver detalles y
+              reseñas</a>
             {% if session.usuario_nombre %}
-            <a href="{{ url_for('ver_propiedad', id=prop._id) }}" class="btn btn-brown w-100 mt-2">
-              Reservar propiedad
-            </a>
+            <a href="{{ url_for('ver_propiedad', id=prop._id) }}" class="btn btn-brown w-100 mt-2">Reservar
+              propiedad</a>
             {% endif %}
-
-            <!-- Mostrar botón Editar solo si es anfitrión y la propiedad es suya -->
             {% if "anfitrion" in rol and prop.propia %}
-            <a href="{{ url_for('editar_propiedad', id=prop._id) }}" class="btn btn-warning w-100 mt-2">
-              Editar propiedad
-            </a>
+            <a href="{{ url_for('editar_propiedad', id=prop._id) }}" class="btn btn-warning w-100 mt-2">Editar
+              propiedad</a>
             {% endif %}
-
           </div>
-          
         </div>
       </div>
       {% endfor %}
     </div>
 
     {% if propiedades|length == 0 %}
-    <p class="text-center text-muted mt-4">No hay propiedades disponibles por el momento.</p>
+    <p class="text-center text-muted mt-4">No hay propiedades que coincidan con los filtros.</p>
     {% endif %}
   </div>
 
-  <footer>
-    <!--<p>© 2025 AlojaT. Todos los derechos reservados.</p> -->
-  </footer>
-
+  <footer></footer>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-</body>
 
+  <script>
+    // Espera a que todo el HTML esté cargado antes de ejecutar
+    document.addEventListener("DOMContentLoaded", function() {
+
+        const minSlider = document.getElementById('minPrecio');
+        const maxSlider = document.getElementById('maxPrecio');
+        const minLabel = document.getElementById('minLabel');
+        const maxLabel = document.getElementById('maxLabel');
+        const sliderRange = document.getElementById('sliderRange'); 
+        
+        // Verificación de seguridad: si algún elemento no existe, no hagas nada
+        if (!minSlider || !maxSlider || !minLabel || !maxLabel || !sliderRange) {
+            console.error("Error: Faltan elementos del slider en el DOM.");
+            return; 
+        }
+
+        function handleInput(e) {
+            // Failsafe: si el valor es inválido, usa 0
+            let minVal = parseInt(minSlider.value) || 0;
+            // Failsafe: si el valor es inválido, usa el máximo
+            let maxVal = parseInt(maxSlider.value) || 5000; 
+            
+            const min = parseInt(minSlider.min);
+            const max = parseInt(minSlider.max);
+            const gap = 100; 
+
+            if (maxVal - minVal < gap) {
+                if (e.target.id === 'minPrecio') {
+                    minSlider.value = maxVal - gap;
+                    minVal = maxVal - gap;
+                } else {
+                    maxSlider.value = minVal + gap;
+                    maxVal = minVal + gap;
+                }
+            }
+
+            minLabel.textContent = `$${minVal}`;
+            maxLabel.textContent = `$${maxVal}`;
+
+            const minPercent = ((minVal - min) / (max - min)) * 100;
+            const maxPercent = ((maxVal - min) / (max - min)) * 100;
+
+            sliderRange.style.left = minPercent + '%';
+            sliderRange.style.width = (maxPercent - minPercent) + '%';
+        }
+
+        minSlider.addEventListener('input', handleInput);
+        maxSlider.addEventListener('input', handleInput);
+        
+        // Llamada inicial para pintar la barra al cargar
+        handleInput({ target: minSlider });
+    });
+  </script>
+
+</body>
 </html>
