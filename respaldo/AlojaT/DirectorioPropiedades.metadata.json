@@ -1,0 +1,1 @@
+{"options":{"viewOn":"propiedades","pipeline":[{"$lookup":{"from":"usuarios","localField":"anfitrion_id","foreignField":"_id","as":"anfitrion"}},{"$unwind":"$anfitrion"}]},"indexes":[],"collectionName":"DirectorioPropiedades","type":"view"}

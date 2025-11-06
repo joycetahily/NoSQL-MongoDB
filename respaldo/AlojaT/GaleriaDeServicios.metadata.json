@@ -1,0 +1,1 @@
+{"options":{"viewOn":"propiedades","pipeline":[{"$unwind":"$servicios"},{"$project":{"_id":{"$numberInt":"0"},"titulo":{"$numberInt":"1"},"servicio":"$servicios"}}]},"indexes":[],"collectionName":"GaleriaDeServicios","type":"view"}

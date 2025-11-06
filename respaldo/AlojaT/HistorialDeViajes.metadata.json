@@ -1,0 +1,1 @@
+{"options":{"viewOn":"reservas","pipeline":[{"$match":{"estado":"completada"}},{"$lookup":{"from":"propiedades","localField":"propiedad_id","foreignField":"_id","as":"propiedad"}},{"$unwind":"$propiedad"}]},"indexes":[],"collectionName":"HistorialDeViajes","type":"view"}
